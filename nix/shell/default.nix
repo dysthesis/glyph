@@ -1,11 +1,7 @@
-{
-  pkgs,
-  self,
-  ...
-}:
+{pkgs, ...}:
 pkgs.mkShell {
   name = "glyph";
-  
+
   packages = with pkgs; [
     nixd
     alejandra

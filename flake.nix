@@ -2,51 +2,51 @@
   description = "GLYPH";
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
 
     treefmt-nix = {
       url = "github:numtide/treefmt-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # Personal library
-    babel = {
-      url = "github:dysthesis/babel";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+    flake-parts.url = "github:hercules-ci/flake-parts";
   };
-  outputs = inputs @ {
-    self,
-    babel,
-    nixpkgs,
-    treefmt-nix,
-    ...
-  }: let
-    inherit (builtins) mapAttrs;
-    inherit (babel) mkLib;
-    lib = mkLib nixpkgs;
 
-    # Systems to support
-    systems = [
-      "aarch64-linux"
-      "x86_64-linux"
-      "x86_64-darwin"
-      "aarch64-darwin"
-    ];
-
-    forAllSystems = lib.babel.forAllSystems {inherit systems;};
-
-    treefmt = forAllSystems (pkgs: treefmt-nix.lib.evalModule pkgs ./nix/formatters);
-  in
-    # Budget flake-parts
-    mapAttrs (_: val: forAllSystems val) {
-      devShells = pkgs: {default = import ./nix/shell {inherit pkgs self;};};
-      # for `nix fmt`
-      formatter = pkgs: treefmt.${pkgs.system}.config.build.wrapper;
-      # for `nix flake check`
-      checks = pkgs: {
-        formatting = treefmt.${pkgs.system}.config.build.check self;
+  outputs = inputs @ {flake-parts, ...}:
+    flake-parts.lib.mkFlake {inherit inputs;} (top @ {
+      config,
+      withSystem,
+      moduleWithSystem,
+      ...
+    }: {
+      imports = [
+        # Optional: use external flake logic, e.g.
+        # inputs.foo.flakeModules.default
+      ];
+      flake = {
+        # Put your original flake attributes here.
       };
-      packages = pkgs: import ./nix/packages {inherit self pkgs inputs lib;};
-    };
+      systems = [
+        # systems for which you want to build the `perSystem` attributes
+        "aarch64-linux"
+        "x86_64-linux"
+        "x86_64-darwin"
+        "aarch64-darwin"
+        # ...
+      ];
+      perSystem = {
+        config,
+        pkgs,
+        ...
+      }: {
+        # Recommended: move all package definitions here.
+        # e.g. (assuming you have a nixpkgs input)
+        # packages.foo = pkgs.callPackage ./foo/package.nix { };
+        # packages.bar = pkgs.callPackage ./bar/package.nix {
+        devShells.default = import ./nix/shell {inherit pkgs;};
+        packages.glyph = pkgs.callPackage ./nix/packages/glyph.nix {};
+        #   foo = config.packages.foo;
+        # };
+      };
+    });
 }
