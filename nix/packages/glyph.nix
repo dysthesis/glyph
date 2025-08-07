@@ -29,15 +29,14 @@ in
       compile glp_utils.c                glp_utils_1024.o
       compile glp_rand.c                 glp_rand_1024.o
       compile glp_rand_openssl_aes.c     glp_rand_openssl_aes_1024.o
-      compile test_vectors.c             glp_test_vectors_1024.o
       compile FFT/FFT_1024_59393.c       FFT/FFT_1024_59393.o
-      compile test.c                     test.o
+      compile bench.c                    bench.o
 
       ${pkgs'.stdenv.cc.targetPrefix}cc \
-        $CCFLAGS -DGLP_N=1024 -o test_1024 \
-        glp_test_vectors_1024.o glp_1024.o glp_utils_1024.o \
+        $CCFLAGS -DGLP_N=1024 -o bench_1024 \
+        glp_1024.o glp_utils_1024.o \
         glp_rand_1024.o glp_rand_openssl_aes_1024.o \
-        FFT/FFT_1024_59393.o test.o \
+        FFT/FFT_1024_59393.o bench.o \
         -lm -lcrypto
 
       runHook postBuild
@@ -45,12 +44,13 @@ in
     installPhase = ''
       runHook preInstall
       mkdir -p $out/bin
-      cp test_1024 $out/bin/
+      cp bench_1024 $out/bin/bench
       runHook postInstall
     '';
 
     meta = with pkgs'.lib; {
-      description = "GLP 1024 test executable (pure C, OpenSSL crypto RNG)";
+      description = "GLP 1024 benchmark executable (pure C, OpenSSL crypto RNG)";
+      mainProgram = "bench";
       platforms = platforms.unix;
     };
   }
